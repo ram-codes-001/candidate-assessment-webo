@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block title %}Patient Listing — Reports{% endblock %}
+
+{% block content %}
+<section class="content-header">
+  <div class="container-fluid">
+    <div class="row mb-2">
+      <div class="col-sm-6">
+        <h1>Patient Listing</h1>
+      </div>
+      <div class="col-sm-6">
+        <ol class="breadcrumb float-sm-right">
+          <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+          <li class="breadcrumb-item active">Reports</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="content">
+  <div class="container-fluid">
+
+    <!-- Filter Bar -->
+    <div class="card card-outline card-primary">
+      <div class="card-body">
+        <form method="get" action="" class="form-inline flex-wrap gap-2">
+          <div class="form-group mr-2 mb-2">
+            <input type="text" name="search" class="form-control"
+                   placeholder="Search MRN, name, diagnosis…"
+                   value="{{ filters.search }}">
+          </div>
+          <div class="form-group mr-2 mb-2">
+            <select name="status" class="form-control">
+              <option value="">All Statuses</option>
+              {% for val, label in status_choices %}
+                <option value="{{ val }}" {% if filters.status == val %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group mr-2 mb-2">
+            <select name="trial" class="form-control">
+              <option value="">All Trials</option>
+              {% for val, label in trial_choices %}
+                <option value="{{ val }}" {% if filters.trial == val %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group mr-2 mb-2">
+            <select name="gender" class="form-control">
+              <option value="">All Genders</option>
+              {% for val, label in gender_choices %}
+                <option value="{{ val }}" {% if filters.gender == val %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group mr-2 mb-2">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-search mr-1"></i>Filter
+            </button>
+            <a href="{% url 'reports:listing' %}" class="btn btn-secondary ml-1">
+              <i class="fas fa-times mr-1"></i>Clear
+            </a>
+          </div>
+          <!-- BUG Cat-H: Export button links directly to export_patients — ignores active filters -->
+          <div class="form-group mb-2 ml-auto">
+            <a href="{% url 'reports:export_patients' %}" class="btn btn-success">
+              <i class="fas fa-file-csv mr-1"></i>Export CSV
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Patient Table -->
+    <div class="card">
+      <div class="card-body p-0">
+        <table id="patientTable" class="table table-hover table-striped">
+          <thead class="thead-light">
+            <tr>
+              <th>MRN</th>
+              <th>Patient Name</th>
+              <th>DOB</th>
+              <th>Gender</th>
+              <th>Trial</th>
+              <th>Enrollment Date</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for patient in patients %}
+            <tr>
+              <td><code>{{ patient.medical_record_number }}</code></td>
+              <td>{{ patient.first_name }} {{ patient.last_name }}</td>
+              <td>{{ patient.date_of_birth }}</td>
+              <td>{{ patient.get_gender_display }}</td>
+              <td>{{ patient.get_trial_assignment_display }}</td>
+              <td>{{ patient.enrollment_date }}</td>
+              <td>
+                <span class="badge badge-{{ patient.status }}">
+                  {{ patient.get_status_display }}
+                </span>
+              </td>
+              <td>
+                <a href="{% url 'patients:detail' pk=patient.pk %}"
+                   class="btn btn-xs btn-info" title="View">
+                  <i class="fas fa-eye"></i>
+                </a>
+                <a href="{% url 'patients:edit' pk=patient.pk %}"
+                   class="btn btn-xs btn-warning" title="Edit">
+                  <i class="fas fa-edit"></i>
+                </a>
+                <button type="button" class="btn btn-xs btn-danger" title="Delete"
+                        onclick="showDeleteReasonModal('deleteForm{{ patient.pk }}')">
+                  <i class="fas fa-trash"></i>
+                </button>
+                <!-- Hidden delete form for this patient -->
+                <form id="deleteForm{{ patient.pk }}" method="post"
+                      action="{% url 'patients:delete' pk=patient.pk %}" style="display:none;">
+                  {% csrf_token %}
+                  <input type="hidden" name="delete_reason" id="delete_reason{{ patient.pk }}" value="">
+                </form>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="8" class="text-center text-muted py-4">
+                No patients found matching the current filters.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function () {
+  $('#patientTable').DataTable({
+    pageLength: 25,
+    lengthMenu: [10, 25, 50, 100],
+    order: [[0, 'asc']],
+    columnDefs: [
+      { orderable: false, targets: 7 }
+    ]
+  });
+});
+</script>
+{% endblock %}

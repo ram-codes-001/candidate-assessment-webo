@@ -1,0 +1,11 @@
+MRN,First Name,Last Name,Date of Birth,Gender,Blood Group,Email,Phone,Trial,Enrollment Date,Status,Diagnosis,Weight (kg),Height (cm),Created At
+MRN-10010,Carlos,Reyes,07/02/1979,M,O+,carlos.reyes@email.com,+1-555-1001,TRIAL-004,15/04/2024,active,"Multiple sclerosis, relapsing-remitting form",91,183,2026-04-11 09:07:28.755518+00:00
+MRN-10009,Yuki,Tanaka,11/06/1993,F,A+,xyz@@domain,+1-555-0901,TRIAL-001,08/04/2024,withdrawn,Atrial fibrillation with rapid ventricular response,55,160,2026-04-11 09:07:28.748374+00:00
+MRN-10008,Richard,Ashworth,25/04/1955,M,AB-,richard.ashworth@email.com,+1-555-0801,TRIAL-004,01/04/2024,active,"Alzheimer's disease, mild cognitive impairment stage",79,172,2026-04-11 09:07:28.738257+00:00
+MRN-10007,Amara,Mensah,03/12/1988,F,B-,amara.mensah@email.com,+1-555-0701,TRIAL-003,22/03/2024,active,Insulin-dependent diabetes mellitus with retinopathy,67,170,2026-04-11 09:07:28.732131+00:00
+MRN-10006,David,Kowalski,18/09/1971,M,O-,david.kowalski@email.com,+1-555-0601,TRIAL-002,15/03/2024,inactive,"Diffuse large B-cell lymphoma, relapsed",82,178,2026-04-11 09:07:28.724479+00:00
+MRN-10005,Isabelle,Fontaine,01/00/1990,F,A-,isabelle.fontaine@email.com,+1-555-0501,TRIAL-001,10/03/2024,active,Coronary artery disease with stable angina,61,162,2026-04-11 09:07:28.717398+00:00
+MRN-10004,Thomas,Okafor,30/05/1960,M,AB+,thomas.okafor@email.com,+1-555-0401,TRIAL-004,01/03/2024,active,"Parkinson's disease, Hoehn and Yahr stage II",95,175,2026-04-11 09:07:28.710562+00:00
+MRN-10003,Priya,Nair,09/11/1982,F,B+,priya.nair@email.com,+1-555-0301,TRIAL-003,20/02/2024,active,Type 2 diabetes mellitus with peripheral neuropathy,obese,158,2026-04-11 09:07:28.701199+00:00
+MRN-10002,Marcus,Delgado,22/07/1975,M,O+,marcus.delgado@email.com,+1-555-0201,TRIAL-002,12/02/2024,active,"Non-small cell lung carcinoma, stage IIIA",88,180,2026-04-11 09:07:28.692569+00:00
+MRN-10001,Eleanor,Hartwell,14/03/1968,F,A+,eleanor.hartwell@email.com,+1-555-0101,TRIAL-001,05/01/2024,active,Hypertensive heart disease with stage 2 hypertension,72,165,2026-04-11 09:07:28.676255+00:00

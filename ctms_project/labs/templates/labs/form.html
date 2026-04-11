@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<section class="content-header">
+  <div class="container-fluid">
+    <div class="row mb-2">
+      <div class="col-sm-6">
+        <h1>{{ title }}</h1>
+      </div>
+      <div class="col-sm-6">
+        <ol class="breadcrumb float-sm-right">
+          <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'labs:list' %}">Lab Results</a></li>
+          <li class="breadcrumb-item active">{{ title }}</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="content">
+  <div class="container-fluid">
+    <form method="post" id="labForm">
+      {% csrf_token %}
+      <input type="hidden" name="edit_reason" id="edit_reason" value="">
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+          {% for error in form.non_field_errors %}
+            <p class="mb-0">{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <!-- Sample Information -->
+      <div class="card card-primary card-outline">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-vial mr-2"></i>Sample Information</h3>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-4">
+              <div class="form-group">
+                <label>Patient <span class="text-danger">*</span></label>
+                {{ form.patient }}
+                {% if form.patient.errors %}
+                  <div class="text-danger small">{{ form.patient.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-group">
+                <label>Visit (optional)</label>
+                {{ form.visit }}
+                {% if form.visit.errors %}
+                  <div class="text-danger small">{{ form.visit.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-group">
+                <!-- BUG Cat-C: TextInput with flatpickr, no asterisk on date label is fine here -->
+                <label>Sample Collection Date <span class="text-danger">*</span></label>
+                {{ form.sample_collection_date }}
+                {% if form.sample_collection_date.errors %}
+                  <div class="text-danger small">{{ form.sample_collection_date.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-4">
+              <div class="form-group">
+                <label>Sample Type <span class="text-danger">*</span></label>
+                {{ form.sample_type }}
+                {% if form.sample_type.errors %}
+                  <div class="text-danger small">{{ form.sample_type.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-group">
+                <label>Test Name <span class="text-danger">*</span></label>
+                {{ form.test_name }}
+                {% if form.test_name.errors %}
+                  <div class="text-danger small">{{ form.test_name.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Test Results — BUG Cat-D: all plain text inputs -->
+      <div class="card card-success card-outline">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-flask mr-2"></i>Test Results</h3>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-3">
+              <div class="form-group">
+                <label>Result Value <span class="text-danger">*</span></label>
+                {{ form.result_value }}
+                {% if form.result_value.errors %}
+                  <div class="text-danger small">{{ form.result_value.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="form-group">
+                <!-- BUG Cat-D: free text unit, no dropdown -->
+                <label>Unit <span class="text-danger">*</span></label>
+                {{ form.unit }}
+                {% if form.unit.errors %}
+                  <div class="text-danger small">{{ form.unit.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="form-group">
+                <label>Reference Range Low <span class="text-danger">*</span></label>
+                {{ form.reference_range_low }}
+                {% if form.reference_range_low.errors %}
+                  <div class="text-danger small">{{ form.reference_range_low.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="form-group">
+                <label>Reference Range High <span class="text-danger">*</span></label>
+                {{ form.reference_range_high }}
+                {% if form.reference_range_high.errors %}
+                  <div class="text-danger small">{{ form.reference_range_high.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-4">
+              <div class="form-group">
+                <label>Abnormal Flag <span class="text-danger">*</span></label>
+                {{ form.abnormal_flag }}
+                {% if form.abnormal_flag.errors %}
+                  <div class="text-danger small">{{ form.abnormal_flag.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-12">
+              <div class="form-group">
+                <!-- BUG Cat-F: no asterisk — critical flag doesn't require remarks -->
+                <label>Remarks</label>
+                {{ form.remarks }}
+                {% if form.remarks.errors %}
+                  <div class="text-danger small">{{ form.remarks.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lab Information -->
+      <div class="card card-info card-outline">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-hospital mr-2"></i>Lab Information</h3>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group">
+                <label>Lab Technician <span class="text-danger">*</span></label>
+                {{ form.lab_technician }}
+                {% if form.lab_technician.errors %}
+                  <div class="text-danger small">{{ form.lab_technician.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group">
+                <label>Lab Name <span class="text-danger">*</span></label>
+                {{ form.lab_name }}
+                {% if form.lab_name.errors %}
+                  <div class="text-danger small">{{ form.lab_name.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row mb-4">
+        <div class="col-12">
+          {% if lab %}
+            <button type="button" class="btn btn-primary" onclick="showEditReasonModal('labForm')">
+              <i class="fas fa-save mr-1"></i> Save Changes
+            </button>
+          {% else %}
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-save mr-1"></i> Add Lab Result
+            </button>
+          {% endif %}
+          <a href="{% url 'labs:list' %}" class="btn btn-secondary ml-2">
+            <i class="fas fa-times mr-1"></i> Cancel
+          </a>
+        </div>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    flatpickr('.flatpickr-input', {
+      dateFormat: 'd/m/Y',
+      allowInput: true,
+    });
+  });
+</script>
+{% endblock %}

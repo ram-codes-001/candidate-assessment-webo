@@ -1,0 +1,21 @@
+/* ============================================================
+   CTMS Custom Styles
+   ============================================================ */
+
+/* Status badges */
+.badge-active    { background-color: #28a745; color: white; }
+.badge-inactive  { background-color: #6c757d; color: white; }
+.badge-withdrawn { background-color: #dc3545; color: white; }
+.badge-critical  { background-color: #dc3545; color: white; }
+.badge-abnormal  { background-color: #ffc107; color: black; }
+.badge-normal    { background-color: #28a745; color: white; }
+
+/* Severity badges */
+.badge-mild             { background-color: #17a2b8; color: white; }
+.badge-moderate         { background-color: #ffc107; color: black; }
+.badge-severe           { background-color: #fd7e14; color: white; }
+.badge-life_threatening { background-color: #dc3545; color: white; }
+
+/* Layout */
+.content-wrapper { min-height: calc(100vh - 57px); }
+.flatpickr-input[readonly] { background: white; }

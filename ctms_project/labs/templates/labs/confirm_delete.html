@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Delete Lab Result{% endblock %}
+
+{% block content %}
+<section class="content-header">
+  <div class="container-fluid">
+    <div class="row mb-2">
+      <div class="col-sm-6">
+        <h1>Delete Lab Result</h1>
+      </div>
+      <div class="col-sm-6">
+        <ol class="breadcrumb float-sm-right">
+          <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'labs:list' %}">Lab Results</a></li>
+          <li class="breadcrumb-item active">Delete</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="content">
+  <div class="container-fluid">
+    <div class="card card-danger card-outline">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-exclamation-triangle mr-2"></i>Confirm Deletion</h3>
+      </div>
+      <div class="card-body">
+        <p>Are you sure you want to delete the lab result <strong>{{ lab.test_name }}</strong> for patient <strong>{{ lab.patient }}</strong>?</p>
+        <p class="text-muted">This action cannot be undone.</p>
+        <form method="post" id="deleteForm">
+          {% csrf_token %}
+          <div class="form-group">
+            <label>Reason for Deletion <span class="text-danger">*</span></label>
+            <input type="text" name="delete_reason" id="delete_reason" class="form-control"
+                   placeholder="Enter reason for deletion">
+          </div>
+          <button type="submit" class="btn btn-danger">
+            <i class="fas fa-trash mr-1"></i> Confirm Delete
+          </button>
+          <a href="{% url 'labs:detail' pk=lab.pk %}" class="btn btn-secondary ml-2">
+            <i class="fas fa-times mr-1"></i> Cancel
+          </a>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

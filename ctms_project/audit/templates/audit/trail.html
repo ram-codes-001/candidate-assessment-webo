@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}Audit Trail{% endblock %}
+
+{% block content %}
+<div class="content-header">
+  <div class="container-fluid">
+    <h1 class="m-0">Audit Trail</h1>
+  </div>
+</div>
+
+<section class="content">
+  <div class="container-fluid">
+
+    {% if filters is not None %}
+    <!-- Filter Form -->
+    <div class="card card-default collapsed-card">
+      <div class="card-header">
+        <h3 class="card-title">Filters</h3>
+        <div class="card-tools">
+          <button type="button" class="btn btn-tool" data-card-widget="collapse">
+            <i class="fas fa-plus"></i>
+          </button>
+        </div>
+      </div>
+      <div class="card-body">
+        <form method="get" action="">
+          <div class="row">
+            <div class="col-md-2">
+              <div class="form-group">
+                <label>Date From</label>
+                <input type="date" name="date_from" class="form-control"
+                       value="{{ filters.date_from }}">
+              </div>
+            </div>
+            <div class="col-md-2">
+              <div class="form-group">
+                <label>Date To</label>
+                <input type="date" name="date_to" class="form-control"
+                       value="{{ filters.date_to }}">
+              </div>
+            </div>
+            <div class="col-md-2">
+              <div class="form-group">
+                <label>User</label>
+                <select name="user_id" class="form-control select2">
+                  <option value="">All Users</option>
+                  {% for u in users %}
+                  <option value="{{ u.pk }}" {% if filters.user_id == u.pk|stringformat:"s" %}selected{% endif %}>
+                    {{ u.get_full_name|default:u.username }}
+                  </option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="col-md-2">
+              <div class="form-group">
+                <label>Module</label>
+                <select name="module" class="form-control select2">
+                  <option value="">All Modules</option>
+                  {% for m in modules %}
+                  <option value="{{ m }}" {% if filters.module == m %}selected{% endif %}>{{ m|title }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="col-md-2">
+              <div class="form-group">
+                <label>Action</label>
+                <select name="action" class="form-control select2">
+                  <option value="">All Actions</option>
+                  {% for val, label in action_choices %}
+                  <option value="{{ val }}" {% if filters.action == val %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+              <div class="form-group w-100">
+                <button type="submit" class="btn btn-primary btn-block">Apply</button>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Audit Table -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">
+          {% if patient_id %}
+            Patient #{{ patient_id }} Audit Trail
+          {% elif module_name %}
+            {{ module_name|title }} Module Audit Trail
+          {% else %}
+            Full Audit Trail
+          {% endif %}
+        </h3>
+      </div>
+      <div class="card-body table-responsive p-0">
+        <table id="auditTable" class="table table-hover text-nowrap dataTable">
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>User</th>
+              <th>Module</th>
+              <th>Record ID</th>
+              <th>Action</th>
+              <th>Reason</th>
+              <th>Changed Fields</th>
+              <th>IP Address</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for log in logs %}
+            <tr>
+              <td>{{ log.timestamp|date:"Y-m-d H:i:s" }}</td>
+              <td>{{ log.user.username|default:"—" }}</td>
+              <td>{{ log.module|title }}</td>
+              <td>{{ log.record_id|default:"—" }}</td>
+              <td>
+                {% if log.action == 'CREATE' %}
+                  <span class="badge badge-success">CREATE</span>
+                {% elif log.action == 'UPDATE' %}
+                  <span class="badge badge-primary">UPDATE</span>
+                {% elif log.action == 'DELETE' %}
+                  <span class="badge badge-danger">DELETE</span>
+                {% elif log.action == 'LOGIN' %}
+                  <span class="badge badge-info">LOGIN</span>
+                {% elif log.action == 'LOGOUT' %}
+                  <span class="badge badge-secondary">LOGOUT</span>
+                {% elif log.action == 'EXPORT' %}
+                  <span class="badge badge-warning">EXPORT</span>
+                {% else %}
+                  <span class="badge badge-light">{{ log.action }}</span>
+                {% endif %}
+              </td>
+              <td>{{ log.reason|default:"—" }}</td>
+              <td>
+                {% if log.changed_fields %}
+                <details>
+                  <summary>View</summary>
+                  <pre class="mt-1 mb-0" style="font-size:0.75rem;max-width:300px;white-space:pre-wrap;">{{ log.changed_fields }}</pre>
+                </details>
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+              <td>{{ log.ip_address|default:"—" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="8" class="text-center text-muted">No audit records found.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <p class="text-muted small">
+      <i class="fas fa-info-circle"></i>
+      Note: Some patient status changes may not appear in this trail.
+    </p>
+
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  $(document).ready(function () {
+    $('#auditTable').DataTable({
+      order: [[0, 'desc']],
+      pageLength: 25,
+    });
+  });
+</script>
+{% endblock %}

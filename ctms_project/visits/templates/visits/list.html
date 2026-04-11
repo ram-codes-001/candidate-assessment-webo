@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}All Visits{% endblock %}
+
+{% block content %}
+<section class="content-header">
+  <div class="container-fluid">
+    <div class="row mb-2">
+      <div class="col-sm-6">
+        <h1>All Visits</h1>
+      </div>
+      <div class="col-sm-6">
+        <ol class="breadcrumb float-sm-right">
+          <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+          <li class="breadcrumb-item active">Visits</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="content">
+  <div class="container-fluid">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-calendar-check mr-2"></i>Visit Logs</h3>
+        <div class="card-tools">
+          <a href="{% url 'visits:create' %}" class="btn btn-sm btn-primary">
+            <i class="fas fa-plus mr-1"></i> Log New Visit
+          </a>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-hover table-bordered" id="visitsTable">
+            <thead class="thead-light">
+              <tr>
+                <th>Visit #</th>
+                <th>Patient</th>
+                <th>Visit Date</th>
+                <th>Type</th>
+                <th>Investigator</th>
+                <th>Deviation</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for visit in visits %}
+              <tr>
+                <td>{{ visit.visit_number }}</td>
+                <td>{{ visit.patient }}</td>
+                <td>{{ visit.visit_date }}</td>
+                <td>{{ visit.get_visit_type_display }}</td>
+                <td>{{ visit.investigator_name }}</td>
+                <td>
+                  {% if visit.protocol_deviation %}
+                    <span class="badge badge-danger">Yes</span>
+                  {% else %}
+                    <span class="badge badge-success">No</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <a href="{% url 'visits:detail' pk=visit.pk %}" class="btn btn-xs btn-info">
+                    <i class="fas fa-eye"></i> View
+                  </a>
+                  <a href="{% url 'visits:edit' pk=visit.pk %}" class="btn btn-xs btn-warning">
+                    <i class="fas fa-edit"></i> Edit
+                  </a>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="7" class="text-center text-muted">No visits recorded.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  $(document).ready(function () {
+    $('#visitsTable').DataTable();
+  });
+</script>
+{% endblock %}

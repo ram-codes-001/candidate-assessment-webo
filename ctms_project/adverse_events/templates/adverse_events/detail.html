@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% block title %}AE: {{ ae.event_title }}{% endblock %}
+
+{% block content %}
+<section class="content-header">
+  <div class="container-fluid">
+    <div class="row mb-2">
+      <div class="col-sm-6">
+        <h1>
+          Adverse Event
+          {% if ae.is_sae %}
+            <span class="badge badge-danger ml-2">SAE</span>
+          {% endif %}
+        </h1>
+      </div>
+      <div class="col-sm-6">
+        <ol class="breadcrumb float-sm-right">
+          <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'adverse_events:list' %}">Adverse Events</a></li>
+          <li class="breadcrumb-item active">{{ ae.event_title }}</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="content">
+  <div class="container-fluid">
+
+    <!-- Action Buttons -->
+    <div class="row mb-3">
+      <div class="col-12">
+        <a href="{% url 'adverse_events:edit' pk=ae.pk %}" class="btn btn-warning">
+          <i class="fas fa-edit mr-1"></i> Edit
+        </a>
+        <button type="button" class="btn btn-danger ml-2"
+                onclick="showDeleteReasonModal('deleteForm')">
+          <i class="fas fa-trash mr-1"></i> Delete
+        </button>
+        <a href="{% url 'patients:detail' pk=ae.patient.pk %}" class="btn btn-secondary ml-2">
+          <i class="fas fa-arrow-left mr-1"></i> Back to Patient
+        </a>
+      </div>
+    </div>
+
+    <!-- Hidden delete form -->
+    <form id="deleteForm" method="post" action="{% url 'adverse_events:delete' pk=ae.pk %}">
+      {% csrf_token %}
+      <input type="hidden" name="delete_reason" id="delete_reason" value="">
+    </form>
+
+    <div class="row">
+      <!-- Event Information -->
+      <div class="col-md-6">
+        <div class="card card-danger card-outline">
+          <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-exclamation-triangle mr-2"></i>Event Information</h3>
+          </div>
+          <div class="card-body">
+            <table class="table table-sm table-borderless">
+              <tr><th width="45%">Patient</th><td>{{ ae.patient }}</td></tr>
+              <tr><th>Event Title</th><td>{{ ae.event_title }}</td></tr>
+              <tr><th>Onset Date</th><td>{{ ae.onset_date }}</td></tr>
+              <tr><th>Resolution Date</th><td>{{ ae.resolution_date|default:"—" }}</td></tr>
+              <tr>
+                <th>Severity</th>
+                <td>
+                  {% if ae.severity == 'life_threatening' %}
+                    <span class="badge badge-danger">Life-Threatening</span>
+                  {% elif ae.severity == 'severe' %}
+                    <span class="badge badge-warning">Severe</span>
+                  {% elif ae.severity == 'moderate' %}
+                    <span class="badge badge-info">Moderate</span>
+                  {% else %}
+                    <span class="badge badge-success">Mild</span>
+                  {% endif %}
+                </td>
+              </tr>
+              <tr><th>Causality</th><td>{{ ae.get_causality_display }}</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Management -->
+      <div class="col-md-6">
+        <div class="card card-warning card-outline">
+          <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-pills mr-2"></i>Management</h3>
+          </div>
+          <div class="card-body">
+            <table class="table table-sm table-borderless">
+              <tr><th width="45%">Action Taken</th><td>{{ ae.get_action_taken_display }}</td></tr>
+              <tr><th>Outcome</th><td>{{ ae.get_outcome_display }}</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <!-- Event Description -->
+      <div class="col-md-12">
+        <div class="card card-secondary card-outline">
+          <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-align-left mr-2"></i>Event Description</h3>
+          </div>
+          <div class="card-body">
+            <p>{{ ae.event_description|default:"No description recorded." }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <!-- SAE Information -->
+      <div class="col-md-6">
+        <div class="card card-danger card-outline">
+          <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-radiation mr-2"></i>SAE Information</h3>
+          </div>
+          <div class="card-body">
+            <table class="table table-sm table-borderless">
+              <tr>
+                <th width="45%">Serious Adverse Event</th>
+                <td>
+                  {% if ae.is_sae %}
+                    <span class="badge badge-danger">Yes — SAE</span>
+                  {% else %}
+                    <span class="badge badge-success">No</span>
+                  {% endif %}
+                </td>
+              </tr>
+              <tr><th>SAE Report Number</th><td>{{ ae.sae_report_number|default:"—" }}</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reporting -->
+      <div class="col-md-6">
+        <div class="card card-info card-outline">
+          <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-file-medical mr-2"></i>Reporting</h3>
+          </div>
+          <div class="card-body">
+            <table class="table table-sm table-borderless">
+              <tr><th width="45%">Reported By</th><td>{{ ae.reported_by }}</td></tr>
+              <tr><th>Report Date</th><td>{{ ae.report_date }}</td></tr>
+              <tr>
+                <th>Regulatory Reported</th>
+                <td>
+                  {% if ae.regulatory_reported %}
+                    <span class="badge badge-success">Yes</span>
+                  {% else %}
+                    <span class="badge badge-secondary">No</span>
+                  {% endif %}
+                </td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <!-- Attachment -->
+      <div class="col-md-6">
+        <div class="card card-primary card-outline">
+          <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-paperclip mr-2"></i>Attachment</h3>
+          </div>
+          <div class="card-body">
+            {% if ae.attachment %}
+              <a href="{{ ae.attachment.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                <i class="fas fa-download mr-1"></i> Download Attachment
+              </a>
+            {% else %}
+              <p class="text-muted mb-0">No attachment uploaded.</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Record Metadata -->
+      <div class="col-md-6">
+        <div class="card card-secondary card-outline">
+          <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-info-circle mr-2"></i>Record Metadata</h3>
+          </div>
+          <div class="card-body">
+            <table class="table table-sm table-borderless">
+              <tr><th width="40%">Created By</th><td>{{ ae.created_by|default:"—" }}</td></tr>
+              <tr><th>Created At</th><td>{{ ae.created_at|date:"d/m/Y H:i" }}</td></tr>
+              <tr><th>Updated At</th><td>{{ ae.updated_at|date:"d/m/Y H:i" }}</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+{% endblock %}

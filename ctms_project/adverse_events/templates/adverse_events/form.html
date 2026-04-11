@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<section class="content-header">
+  <div class="container-fluid">
+    <div class="row mb-2">
+      <div class="col-sm-6">
+        <h1>{{ title }}</h1>
+      </div>
+      <div class="col-sm-6">
+        <ol class="breadcrumb float-sm-right">
+          <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'adverse_events:list' %}">Adverse Events</a></li>
+          <li class="breadcrumb-item active">{{ title }}</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="content">
+  <div class="container-fluid">
+    <form method="post" id="aeForm" enctype="multipart/form-data">
+      {% csrf_token %}
+      <input type="hidden" name="edit_reason" id="edit_reason" value="">
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+          {% for error in form.non_field_errors %}
+            <p class="mb-0">{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <!-- Event Information -->
+      <div class="card card-danger card-outline">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-exclamation-triangle mr-2"></i>Event Information</h3>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group">
+                <label>Patient <span class="text-danger">*</span></label>
+                {{ form.patient }}
+                {% if form.patient.errors %}<div class="text-danger small">{{ form.patient.errors|join:", " }}</div>{% endif %}
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group">
+                <label>Event Title <span class="text-danger">*</span></label>
+                {{ form.event_title }}
+                {% if form.event_title.errors %}<div class="text-danger small">{{ form.event_title.errors|join:", " }}</div>{% endif %}
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-4">
+              <div class="form-group">
+                <!-- BUG Cat-C: TextInput with flatpickr, no date validation -->
+                <label>Onset Date <span class="text-danger">*</span></label>
+                {{ form.onset_date }}
+                {% if form.onset_date.errors %}<div class="text-danger small">{{ form.onset_date.errors|join:", " }}</div>{% endif %}
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-group">
+                <!-- BUG Cat-C/F: TextInput, no date order validation -->
+                <label>Resolution Date</label>
+                {{ form.resolution_date }}
+                {% if form.resolution_date.errors %}<div class="text-danger small">{{ form.resolution_date.errors|join:", " }}</div>{% endif %}
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-group">
+                <label>Severity <span class="text-danger">*</span></label>
+                {{ form.severity }}
+                {% if form.severity.errors %}<div class="text-danger small">{{ form.severity.errors|join:", " }}</div>{% endif %}
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group">
+                <label>Causality <span class="text-danger">*</span></label>
+                {{ form.causality }}
+                {% if form.causality.errors %}<div class="text-danger small">{{ form.causality.errors|join:", " }}</div>{% endif %}
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-12">
+              <div class="form-group">
+                <!-- BUG Cat-A: asterisk shown but field is not required — saves without it -->
+                <label>Event Description <span class="text-danger">*</span></label>
+                {{ form.event_description }}
+                {% if form.event_description.errors %}<div class="text-danger small">{{ form.event_description.errors|join:", " }}</div>{% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Management -->
+      <div class="card card-warning card-outline">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-pills mr-2"></i>Management</h3>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group">
+                <label>Action Taken <span class="text-danger">*</span></label>
+                {{ form.action_taken }}
+                {% if form.action_taken.errors %}<div class="text-danger small">{{ form.action_taken.errors|join:", " }}</div>{% endif %}
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group">
+                <label>Outcome <span class="text-danger">*</span></label>
+                {{ form.outcome }}
+                {% if form.outcome.errors %}<div class="text-danger small">{{ form.outcome.errors|join:", " }}</div>{% endif %}
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-12">
+              <div class="form-group">
+                <label>Attachment</label>
+                {{ form.attachment }}
+                <!-- BUG: No file type validation — accepts .exe, .js, .bat, .sh -->
+                {% if form.attachment.errors %}<div class="text-danger small">{{ form.attachment.errors|join:", " }}</div>{% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SAE (Serious Adverse Event) -->
+      <div class="card card-danger card-outline">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-radiation mr-2"></i>Serious Adverse Event (SAE)</h3>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-12">
+              <div class="form-group form-check">
+                {{ form.is_sae }}
+                <label class="form-check-label ml-2" for="{{ form.is_sae.id_for_label }}">
+                  This is a Serious Adverse Event (SAE)
+                </label>
+              </div>
+            </div>
+          </div>
+          <!-- BUG Cat-A/F: hidden by default, shown via JS — but saves without it even when SAE=True -->
+          <div class="row" id="sae_report_number_row" style="display:none;">
+            <div class="col-md-6">
+              <div class="form-group">
+                <label>SAE Report Number <span class="text-danger">*</span></label>
+                {{ form.sae_report_number }}
+                {% if form.sae_report_number.errors %}<div class="text-danger small">{{ form.sae_report_number.errors|join:", " }}</div>{% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reporting -->
+      <div class="card card-info card-outline">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-file-medical mr-2"></i>Reporting</h3>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-4">
+              <div class="form-group">
+                <label>Reported By <span class="text-danger">*</span></label>
+                {{ form.reported_by }}
+                {% if form.reported_by.errors %}<div class="text-danger small">{{ form.reported_by.errors|join:", " }}</div>{% endif %}
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-group">
+                <!-- BUG Cat-C: TextInput with flatpickr -->
+                <label>Report Date <span class="text-danger">*</span></label>
+                {{ form.report_date }}
+                {% if form.report_date.errors %}<div class="text-danger small">{{ form.report_date.errors|join:", " }}</div>{% endif %}
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-group form-check mt-4">
+                {{ form.regulatory_reported }}
+                <label class="form-check-label ml-2" for="{{ form.regulatory_reported.id_for_label }}">
+                  Regulatory Reported
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row mb-4">
+        <div class="col-12">
+          {% if ae %}
+            <button type="button" class="btn btn-primary" onclick="showEditReasonModal('aeForm')">
+              <i class="fas fa-save mr-1"></i> Save Changes
+            </button>
+          {% else %}
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-save mr-1"></i> Report Event
+            </button>
+          {% endif %}
+          <a href="{% url 'adverse_events:list' %}" class="btn btn-secondary ml-2">
+            <i class="fas fa-times mr-1"></i> Cancel
+          </a>
+        </div>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    flatpickr('.flatpickr-input', {
+      dateFormat: 'd/m/Y',
+      allowInput: true,
+    });
+
+    // Show/hide SAE report number when is_sae checkbox toggled
+    var isSeaCheckbox = document.getElementById('{{ form.is_sae.id_for_label }}');
+    var saeRow = document.getElementById('sae_report_number_row');
+    if (isSeaCheckbox && saeRow) {
+      if (isSeaCheckbox.checked) {
+        saeRow.style.display = '';
+      }
+      isSeaCheckbox.addEventListener('change', function () {
+        saeRow.style.display = this.checked ? '' : 'none';
+      });
+    }
+  });
+</script>
+{% endblock %}

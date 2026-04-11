@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard — CTMS{% endblock %}
+
+{% block content %}
+<!-- Content Header -->
+<div class="content-header">
+  <div class="container-fluid">
+    <div class="row mb-2">
+      <div class="col-sm-6">
+        <h1 class="m-0">Dashboard</h1>
+      </div>
+      <div class="col-sm-6">
+        <ol class="breadcrumb float-sm-right">
+          <li class="breadcrumb-item active">Dashboard</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Main content -->
+<section class="content">
+  <div class="container-fluid">
+
+    <!-- Stat Cards Row -->
+    <div class="row">
+
+      <!-- Total Patients -->
+      <div class="col-md-3 col-sm-6">
+        <div class="info-box">
+          <span class="info-box-icon bg-info elevation-1">
+            <i class="fas fa-users"></i>
+          </span>
+          <div class="info-box-content">
+            <span class="info-box-text">Total Patients</span>
+            <span class="info-box-number">{{ total_patients }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Trials -->
+      <div class="col-md-3 col-sm-6">
+        <div class="info-box">
+          <span class="info-box-icon bg-success elevation-1">
+            <i class="fas fa-flask"></i>
+          </span>
+          <div class="info-box-content">
+            <span class="info-box-text">Active Trials</span>
+            <span class="info-box-number">4</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Open AEs -->
+      <div class="col-md-3 col-sm-6">
+        <div class="info-box">
+          <span class="info-box-icon bg-danger elevation-1">
+            <i class="fas fa-exclamation-triangle"></i>
+          </span>
+          <div class="info-box-content">
+            <span class="info-box-text">Open AEs</span>
+            <span class="info-box-number">{{ open_aes }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Visits This Month -->
+      <div class="col-md-3 col-sm-6">
+        <div class="info-box">
+          <span class="info-box-icon bg-warning elevation-1">
+            <i class="fas fa-calendar-check"></i>
+          </span>
+          <div class="info-box-content">
+            <span class="info-box-text">Visits This Month</span>
+            <span class="info-box-number">{{ visits_this_month }}</span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /.row stat cards -->
+
+    <!-- Middle Row: Recent Patients + Recent AEs -->
+    <div class="row">
+
+      <!-- Recent Patients -->
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-user-injured me-1"></i> Recent Patients</h3>
+          </div>
+          <div class="card-body p-0">
+            <table class="table table-sm table-hover mb-0">
+              <thead>
+                <tr>
+                  <th>MRN</th>
+                  <th>Name</th>
+                  <th>Trial</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for patient in recent_patients %}
+                <tr>
+                  <td>
+                    <a href="/patients/{{ patient.pk }}/">{{ patient.medical_record_number }}</a>
+                  </td>
+                  <td>{{ patient.first_name }} {{ patient.last_name }}</td>
+                  <td>{{ patient.trial_assignment|default:"—" }}</td>
+                  <td>
+                    <span class="badge badge-{{ patient.status }}">
+                      {{ patient.get_status_display|default:patient.status }}
+                    </span>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="4" class="text-center text-muted">No patients yet.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Adverse Events -->
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-exclamation-triangle me-1"></i> Recent Adverse Events</h3>
+          </div>
+          <div class="card-body p-0">
+            <table class="table table-sm table-hover mb-0">
+              <thead>
+                <tr>
+                  <th>Patient</th>
+                  <th>Event</th>
+                  <th>Severity</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for ae in recent_aes %}
+                <tr>
+                  <td>
+                    <a href="/patients/{{ ae.patient.pk }}/">
+                      {{ ae.patient.first_name }} {{ ae.patient.last_name }}
+                    </a>
+                  </td>
+                  <td>{{ ae.event_name|default:"—" }}</td>
+                  <td>
+                    <span class="badge badge-{{ ae.severity }}">
+                      {{ ae.get_severity_display|default:ae.severity }}
+                    </span>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="3" class="text-center text-muted">No adverse events yet.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /.row middle -->
+
+    <!-- Quick Actions Row -->
+    <div class="row">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-bolt me-1"></i> Quick Actions</h3>
+          </div>
+          <div class="card-body">
+            <a href="/patients/new/" class="btn btn-primary me-2">
+              <i class="fas fa-user-plus"></i> Register Patient
+            </a>
+            <a href="/visits/new/" class="btn btn-success me-2">
+              <i class="fas fa-clipboard-list"></i> Log Visit
+            </a>
+            <a href="/adverse-events/new/" class="btn btn-danger me-2">
+              <i class="fas fa-exclamation-triangle"></i> Report AE
+            </a>
+            <a href="/audit/" class="btn btn-secondary">
+              <i class="fas fa-history"></i> View Audit Trail
+            </a>
+          </div>
+        </div>
+      </div>
+    </div><!-- /.row quick actions -->
+
+  </div><!-- /.container-fluid -->
+</section>
+{% endblock %}

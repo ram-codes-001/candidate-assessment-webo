@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Delete Patient{% endblock %}
+
+{% block content %}
+<section class="content-header">
+  <div class="container-fluid">
+    <div class="row mb-2">
+      <div class="col-sm-6">
+        <h1>Delete Patient</h1>
+      </div>
+      <div class="col-sm-6">
+        <ol class="breadcrumb float-sm-right">
+          <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'reports:listing' %}">Patients</a></li>
+          <li class="breadcrumb-item">
+            <a href="{% url 'patients:detail' pk=patient.pk %}">{{ patient.medical_record_number }}</a>
+          </li>
+          <li class="breadcrumb-item active">Delete</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="content">
+  <div class="container-fluid">
+    <div class="row justify-content-center">
+      <div class="col-md-6">
+        <div class="card card-danger card-outline">
+          <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-exclamation-triangle mr-2"></i>Confirm Deletion</h3>
+          </div>
+          <div class="card-body">
+            <p class="lead">
+              Are you sure you want to permanently delete the patient record for:
+            </p>
+            <p class="font-weight-bold text-danger">
+              {{ patient.first_name }} {{ patient.last_name }}
+              ({{ patient.medical_record_number }})
+            </p>
+            <p class="text-muted small">
+              This action cannot be undone. All associated visits, lab results, and adverse events
+              will also be deleted.
+            </p>
+          </div>
+          <div class="card-footer">
+            <form id="deleteForm" method="post">
+              {% csrf_token %}
+              <input type="hidden" name="delete_reason" id="delete_reason" value="">
+              <button type="button" class="btn btn-danger"
+                      onclick="showDeleteReasonModal('deleteForm')">
+                <i class="fas fa-trash mr-1"></i> Yes, Delete Patient
+              </button>
+              <a href="{% url 'patients:detail' pk=patient.pk %}" class="btn btn-secondary ml-2">
+                <i class="fas fa-times mr-1"></i> Cancel
+              </a>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

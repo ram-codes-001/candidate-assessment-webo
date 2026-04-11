@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}Visit: {{ visit.visit_number }}{% endblock %}
+
+{% block content %}
+<section class="content-header">
+  <div class="container-fluid">
+    <div class="row mb-2">
+      <div class="col-sm-6">
+        <h1>Visit Record</h1>
+      </div>
+      <div class="col-sm-6">
+        <ol class="breadcrumb float-sm-right">
+          <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'visits:list' %}">Visits</a></li>
+          <li class="breadcrumb-item active">{{ visit.visit_number }}</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="content">
+  <div class="container-fluid">
+
+    <!-- Action Buttons -->
+    <div class="row mb-3">
+      <div class="col-12">
+        <a href="{% url 'visits:edit' pk=visit.pk %}" class="btn btn-warning">
+          <i class="fas fa-edit mr-1"></i> Edit Visit
+        </a>
+        <button type="button" class="btn btn-danger ml-2"
+                onclick="showDeleteReasonModal('deleteForm')">
+          <i class="fas fa-trash mr-1"></i> Delete Visit
+        </button>
+        <a href="{% url 'patients:detail' pk=visit.patient.pk %}" class="btn btn-secondary ml-2">
+          <i class="fas fa-arrow-left mr-1"></i> Back to Patient
+        </a>
+      </div>
+    </div>
+
+    <!-- Hidden delete form -->
+    <form id="deleteForm" method="post" action="{% url 'visits:delete' pk=visit.pk %}">
+      {% csrf_token %}
+      <input type="hidden" name="delete_reason" id="delete_reason" value="">
+    </form>
+
+    <!-- Visit Info Cards -->
+    <div class="row">
+      <div class="col-md-6">
+        <div class="card card-primary card-outline">
+          <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-calendar-check mr-2"></i>Visit Information</h3>
+          </div>
+          <div class="card-body">
+            <table class="table table-sm table-borderless">
+              <tr><th width="40%">Patient</th><td>{{ visit.patient }}</td></tr>
+              <tr><th>Visit Number</th><td>{{ visit.visit_number }}</td></tr>
+              <tr><th>Visit Type</th><td>{{ visit.get_visit_type_display }}</td></tr>
+              <tr><th>Visit Date</th><td>{{ visit.visit_date }}</td></tr>
+              <tr><th>Next Visit Date</th><td>{{ visit.next_visit_date|default:"—" }}</td></tr>
+              <tr><th>Investigator</th><td>{{ visit.investigator_name }}</td></tr>
+              <tr><th>Coordinator</th><td>{{ visit.coordinator|default:"—" }}</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card card-success card-outline">
+          <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-heartbeat mr-2"></i>Vitals</h3>
+          </div>
+          <div class="card-body">
+            <table class="table table-sm table-borderless">
+              <tr><th width="50%">Systolic BP (mmHg)</th><td>{{ visit.systolic_bp }}</td></tr>
+              <tr><th>Diastolic BP (mmHg)</th><td>{{ visit.diastolic_bp }}</td></tr>
+              <tr><th>Heart Rate (bpm)</th><td>{{ visit.heart_rate }}</td></tr>
+              <tr><th>Body Temperature (°C)</th><td>{{ visit.body_temperature }}</td></tr>
+              <tr><th>Oxygen Saturation (%)</th><td>{{ visit.oxygen_saturation }}</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-md-6">
+        <div class="card card-info card-outline">
+          <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-notes-medical mr-2"></i>Visit Notes</h3>
+          </div>
+          <div class="card-body">
+            <p>{{ visit.visit_notes|default:"No notes recorded." }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card card-warning card-outline">
+          <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-exclamation-circle mr-2"></i>Protocol Deviation</h3>
+          </div>
+          <div class="card-body">
+            <table class="table table-sm table-borderless">
+              <tr>
+                <th width="50%">Protocol Deviation</th>
+                <td>
+                  {% if visit.protocol_deviation %}
+                    <span class="badge badge-danger">Yes</span>
+                  {% else %}
+                    <span class="badge badge-success">No</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% if visit.protocol_deviation %}
+              <tr>
+                <th>Deviation Notes</th>
+                <td>{{ visit.deviation_notes|default:"—" }}</td>
+              </tr>
+              {% endif %}
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-md-6">
+        <div class="card card-secondary card-outline">
+          <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-info-circle mr-2"></i>Record Metadata</h3>
+          </div>
+          <div class="card-body">
+            <table class="table table-sm table-borderless">
+              <tr><th width="40%">Created By</th><td>{{ visit.created_by|default:"—" }}</td></tr>
+              <tr><th>Created At</th><td>{{ visit.created_at|date:"d/m/Y H:i" }}</td></tr>
+              <tr><th>Updated At</th><td>{{ visit.updated_at|date:"d/m/Y H:i" }}</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,269 @@
+# Implementation Plan: CTMS QA Assessment Platform
+
+## Overview
+
+Build a Django 4.2 Clinical Trial Management System with 39 intentional bugs preserved exactly as specified. Implementation follows the build order: scaffold → accounts → audit → patients → visits → labs → adverse_events → reports → UI shell → seed commands → deployment files.
+
+**Critical constraint**: All intentional bugs (Cat-A through Cat-H) MUST be preserved. Zero accidental hardening.
+
+## Tasks
+
+- [x] 1. Project scaffold
+  - Create `ctms_project/` directory structure with `manage.py`, `requirements.txt`, `.env.example`
+  - Create `ctms/` Django project package: `__init__.py`, `settings.py`, `urls.py`, `wsgi.py`
+  - Configure `settings.py`: `AUTH_USER_MODEL`, `INSTALLED_APPS`, `SESSION_COOKIE_AGE=1800`, `SESSION_SAVE_EVERY_REQUEST=True`, `SESSION_EXPIRE_AT_BROWSER_CLOSE=True`, `LOGIN_URL`, `LOGIN_REDIRECT_URL`, whitenoise, python-decouple, `MEDIA_ROOT`
+  - Add `requirements.txt`: Django==4.2.13, python-decouple==3.8, whitenoise==6.6.0, gunicorn==21.2.0, Pillow==10.3.0
+  - _Requirements: 12.1, 12.4, 12.5, 12.6_
+
+- [x] 2. accounts app
+  - [x] 2.1 Create `accounts/` app with `CTMSUser` model extending `AbstractUser` with `role` and `employee_id` fields
+    - Register `CTMSUser` in `settings.py` as `AUTH_USER_MODEL`
+    - _Requirements: 1.1, 1.6, 1.7_
+  - [x] 2.2 Implement `login_view` and `logout_view` in `accounts/views.py`
+    - `login_view`: authenticate, call `log_action` on success, add form error on failure — BUG Cat-G: no `log_action` call in the `else` branch
+    - `login_view`: render "Remember Me" checkbox in template but never read its value — BUG Cat-H
+    - `logout_view`: call `log_action` with action=LOGOUT, then `django.contrib.auth.logout`
+    - Create `accounts/templates/accounts/login.html` with username, password, and "Remember Me" checkbox (no effect)
+    - Create `accounts/urls.py` and wire into `ctms/urls.py`
+    - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.8, 1.9_
+
+- [x] 3. audit app
+  - [x] 3.1 Create `audit/` app with `AuditLog` model
+    - Fields: `timestamp`, `user` (FK CTMSUser SET_NULL), `module`, `record_id`, `action`, `reason`, `changed_fields` (JSONField), `ip_address`, `user_agent`
+    - _Requirements: 8.1, 8.2, 8.6, 8.7_
+  - [x] 3.2 Implement `log_action()` in `audit/mixins.py` with intentional status-skip bug
+    - BUG Cat-G: if `module='patients'` AND `action='UPDATE'` AND `changed_fields` contains only `'status'` key → `return` early, no log created
+    - Extract IP from `HTTP_X_FORWARDED_FOR` or `REMOTE_ADDR`, truncate to 45 chars
+    - Extract `user_agent` from `HTTP_USER_AGENT`, truncate to 500 chars
+    - _Requirements: 4.1, 4.2, 4.3, 8.3_
+  - [x] 3.3 Create audit trail views and templates
+    - `/audit/` — full trail with GET filter support: date range, user, module, action
+    - `/audit/patient/<patient_id>/` — per-patient trail
+    - `/audit/module/<module_name>/` — per-module trail
+    - `audit/templates/audit/trail.html` with DataTables table: Timestamp, User, Module, Record ID, Action badge, Reason, Changed Fields (expandable), IP Address
+    - Create `audit/urls.py` and wire into `ctms/urls.py`
+    - _Requirements: 8.8, 8.9, 8.10_
+
+- [x] 4. patients app
+  - [x] 4.1 Create `patients/models.py` with `Patient` model — all intentional CharField bugs preserved
+    - `date_of_birth`, `enrollment_date`: `CharField(max_length=50)` — BUG Cat-C
+    - `weight_kg`, `height_cm`: `CharField(max_length=20)` — BUG Cat-D
+    - `email`, `phone`, `medical_record_number`, `national_id`: `CharField` — BUG Cat-E
+    - `diagnosis`: `TextField()` (no `blank=True` on model)
+    - `consent_signed`: `BooleanField(default=False)`
+    - `emergency_contact_name`, `emergency_contact_phone`: `CharField`
+    - `created_by` FK, `created_at`, `updated_at`, `status`, `trial_assignment`, `blood_group`, `gender`
+    - _Requirements: 2.1, 3.1–3.14_
+  - [x] 4.2 Create `patients/forms.py` with `PatientForm` — full bug layer
+    - `consent_signed = forms.BooleanField(required=False)` — BUG Cat-A
+    - `diagnosis`: `blank=True` in Meta — BUG Cat-A
+    - All date fields: `TextInput` widget with Flatpickr class — BUG Cat-C
+    - All numeric fields: `TextInput(attrs={'type': 'text'})` — BUG Cat-D
+    - `email`: `TextInput` not `EmailInput` — BUG Cat-E
+    - Format-hint fields: placeholder only, no `RegexValidator` — BUG Cat-E
+    - `clean_emergency_contact_name()` and `clean_emergency_contact_phone()`: raise `ValidationError` if empty — BUG Cat-B
+    - No `clean()` cross-field method — BUG Cat-F
+    - _Requirements: 3.1–3.14_
+  - [x] 4.3 Implement CRUD views in `patients/views.py`
+    - `patient_create`: save with `created_by=request.user`, call `log_action(..., 'CREATE', {})`
+    - `patient_detail`: render with tabbed sub-sections (Visits, Lab Results, Adverse Events, Audit Trail)
+    - `patient_edit`: compute `changed_data` diff, call `log_action(..., 'UPDATE', changed)` — BUG Cat-G fires inside `log_action`; BUG Cat-H: `edit_reason` not validated server-side
+    - `patient_delete`: call `log_action(..., 'DELETE', {}, reason=delete_reason)`, then delete
+    - All views decorated with `@login_required`
+    - Create `patients/urls.py` and wire into `ctms/urls.py`
+    - _Requirements: 2.1–2.8, 4.1–4.3_
+  - [x] 4.4 Create patient templates
+    - `patients/templates/patients/form.html`: Bootstrap 5 grid form, asterisk (*) on required fields, NO asterisk on emergency contact fields (BUG Cat-B), Flatpickr on date fields, SweetAlert2 reason modal on edit
+    - `patients/templates/patients/detail.html`: patient info cards + Bootstrap tabs for Visits, Lab Results, Adverse Events, Audit Trail sub-sections
+    - `patients/templates/patients/confirm_delete.html`: delete confirmation with reason input
+    - _Requirements: 2.3, 3.13, 13.4, 13.7_
+  - [ ]* 4.5 Write property test for PatientForm consent bypass
+    - **Property 1: Consent bypass** — `consent_signed=False` always passes validation
+    - **Validates: Requirements 3.9**
+  - [ ]* 4.6 Write property test for PatientForm diagnosis bypass
+    - **Property 2: Diagnosis bypass** — `diagnosis=""` always passes validation
+    - **Validates: Requirements 3.10**
+  - [ ]* 4.7 Write property test for PatientForm date field bypass
+    - **Property 4: Date field bypass — patient** — any string `s` for `date_of_birth` passes validation
+    - **Validates: Requirements 3.1, 3.2**
+  - [ ]* 4.8 Write property test for PatientForm email field bypass
+    - **Property 5: Email field bypass** — any string `s` for `email` passes validation
+    - **Validates: Requirements 3.5**
+  - [ ]* 4.9 Write property test for status-only change audit gap
+    - **Property 6: Status-only change audit gap** — editing only `status` does NOT create a new AuditLog UPDATE entry
+    - **Validates: Requirements 4.1, 4.3, 8.3**
+
+- [ ] 5. Checkpoint — Ensure all tests pass, ask the user if questions arise.
+
+- [x] 6. visits app
+  - [x] 6.1 Create `visits/models.py` with `VisitLog` model — vitals as CharField
+    - `visit_date`, `next_visit_date`: `CharField(max_length=50)` — BUG Cat-C
+    - `visit_number`: `CharField(max_length=20)` — BUG Cat-E
+    - `systolic_bp`, `diastolic_bp`, `heart_rate`, `body_temperature`, `oxygen_saturation`: `CharField(max_length=20)` — BUG Cat-D
+    - `protocol_deviation`: `BooleanField(default=False)`; `deviation_notes`: `TextField(blank=True)` — BUG Cat-A/F
+    - `patient` FK, `coordinator` FK, `created_by` FK
+    - _Requirements: 5.1–5.13_
+  - [x] 6.2 Create `visits/forms.py` with `VisitForm` — no cross-field validation
+    - All vitals: `TextInput(attrs={'type': 'text'})` — BUG Cat-D
+    - `visit_number`: placeholder "Format: V-001", no `RegexValidator` — BUG Cat-E
+    - `visit_date`, `next_visit_date`: `TextInput` with Flatpickr class — BUG Cat-C
+    - No `clean()` to compare `next_visit_date > visit_date` — BUG Cat-F
+    - No `clean()` to require `deviation_notes` when `protocol_deviation=True` — BUG Cat-A/F
+    - `coordinator`: `ModelChoiceField` filtered to `CTMSUser.objects.all()`
+    - _Requirements: 5.4–5.13_
+  - [x] 6.3 Implement CRUD views in `visits/views.py` with `@login_required`, `log_action` calls, and templates
+    - `visit_create`, `visit_detail`, `visit_edit`, `visit_delete`
+    - Create `visits/templates/visits/form.html` and `detail.html`
+    - Create `visits/urls.py` and wire into `ctms/urls.py`
+    - _Requirements: 5.1–5.3_
+  - [ ]* 6.4 Write property test for VisitForm numeric field bypass
+    - **Property 3: Numeric field bypass — vitals** — any string `s` for `systolic_bp` passes validation
+    - **Validates: Requirements 5.7, 5.8, 5.9, 5.10, 5.11**
+  - [ ]* 6.5 Write property test for VisitForm date field bypass
+    - **Property 12 (partial): Date field bypass — visits** — any string `s` for `visit_date` passes validation
+    - **Validates: Requirements 5.4, 5.5**
+  - [ ]* 6.6 Write property test for protocol deviation conditional bypass
+    - **Property 14: Protocol deviation conditional bypass** — `protocol_deviation=True` with `deviation_notes=""` passes validation
+    - **Validates: Requirements 5.12**
+
+- [x] 7. labs app
+  - [x] 7.1 Create `labs/models.py` with `LabResult` model — numeric fields as CharField
+    - `sample_collection_date`: `CharField(max_length=50)` — BUG Cat-C
+    - `result_value`, `reference_range_low`, `reference_range_high`, `unit`: `CharField` — BUG Cat-D
+    - `abnormal_flag`: choices `normal/abnormal/critical`; `remarks`: `TextField(blank=True)` — BUG Cat-F
+    - `patient` FK, `visit` FK (SET_NULL), `created_by` FK
+    - _Requirements: 6.1–6.10_
+  - [x] 7.2 Create `labs/forms.py` with `LabForm` — no critical-remarks enforcement
+    - `result_value`, `reference_range_low`, `reference_range_high`: `TextInput` — BUG Cat-D
+    - `unit`: free `TextInput`, no dropdown — BUG Cat-D
+    - `sample_collection_date`: `TextInput` with Flatpickr class — BUG Cat-C
+    - No `clean()` to require `remarks` when `abnormal_flag == 'critical'` — BUG Cat-F
+    - _Requirements: 6.4–6.10_
+  - [x] 7.3 Implement CRUD views in `labs/views.py` with `@login_required`, `log_action` calls, and templates
+    - `lab_create`, `lab_detail`, `lab_edit`, `lab_delete`
+    - Create `labs/templates/labs/form.html` and `detail.html`
+    - Create `labs/urls.py` and wire into `ctms/urls.py`
+    - _Requirements: 6.1–6.3_
+  - [ ]* 7.4 Write property test for LabForm date field bypass
+    - **Property 12 (partial): Date field bypass — labs** — any string `s` for `sample_collection_date` passes validation
+    - **Validates: Requirements 6.4**
+  - [ ]* 7.5 Write property test for critical remarks bypass
+    - **Property 10: Critical remarks bypass** — `abnormal_flag='critical'` with `remarks=""` passes validation
+    - **Validates: Requirements 6.9**
+
+- [x] 8. adverse_events app
+  - [x] 8.1 Create `adverse_events/models.py` with `AdverseEvent` model
+    - `onset_date`, `resolution_date`, `report_date`: `CharField(max_length=50)` — BUG Cat-C
+    - `event_description`: `TextField(blank=True)` — BUG Cat-A
+    - `sae_report_number`: `CharField(max_length=50, blank=True)` — BUG Cat-A/F
+    - `attachment`: `FileField(upload_to='ae_attachments/', blank=True, null=True)` — no file type validation (unsafe upload bug)
+    - `patient` FK, `created_by` FK; severity, causality, action_taken, outcome choice fields
+    - _Requirements: 7.1–7.11_
+  - [x] 8.2 Create `adverse_events/forms.py` with `AdverseEventForm` — no SAE conditional validation
+    - `event_description`: `blank=True` in Meta — BUG Cat-A
+    - `sae_report_number`: `blank=True` in Meta — BUG Cat-A/F
+    - `onset_date`, `resolution_date`, `report_date`: `TextInput` with Flatpickr class — BUG Cat-C
+    - No `clean()` to compare `resolution_date >= onset_date` — BUG Cat-F
+    - No `clean()` to require `sae_report_number` when `is_sae=True` — BUG Cat-A/F
+    - `attachment`: `FileField` with no `allowed_extensions` validation — unsafe upload bug
+    - _Requirements: 7.4–7.11_
+  - [x] 8.3 Implement CRUD views in `adverse_events/views.py` with `@login_required`, `log_action` calls, and templates
+    - `ae_create`, `ae_detail`, `ae_edit`, `ae_delete`
+    - Create `adverse_events/templates/adverse_events/form.html` and `detail.html`
+    - Create `adverse_events/urls.py` and wire into `ctms/urls.py`
+    - _Requirements: 7.1–7.3_
+  - [ ]* 8.4 Write property test for AdverseEventForm date field bypass
+    - **Property 12 (partial): Date field bypass — adverse events** — any string `s` for `onset_date`, `resolution_date`, `report_date` passes validation
+    - **Validates: Requirements 7.4, 7.5, 7.6**
+  - [ ]* 8.5 Write property test for SAE report number bypass
+    - **Property 9: SAE report number bypass** — `is_sae=True` with `sae_report_number=""` passes validation
+    - **Validates: Requirements 7.9**
+  - [ ]* 8.6 Write property test for date order bypass
+    - **Property 13: Date order bypass — adverse events** — `resolution_date` before `onset_date` passes validation
+    - **Validates: Requirements 7.7**
+
+- [ ] 9. Checkpoint — Ensure all tests pass, ask the user if questions arise.
+
+- [x] 10. reports app
+  - [x] 10.1 Create `reports/views.py` with patient listing and all CSV export views
+    - `patient_listing`: supports GET params `search`, `status`, `trial`, `gender` for server-side filtering; renders DataTables table
+    - `export_patients_csv`: `Patient.objects.all()` — BUG Cat-H: GET params ignored; no `log_action()` call — BUG Cat-G; excludes: `national_id`, `address`, `emergency_contact_*`, `consent_signed`, `created_by`
+    - `export_visits_csv`: `VisitLog.objects.all()` — BUG Cat-H; excludes: `visit_notes`, `deviation_notes`, `coordinator`, `created_by`
+    - `export_labs_csv`: `LabResult.objects.all()` — BUG Cat-H; excludes: `remarks`, `lab_technician`, `visit`, `created_by`
+    - `export_ae_csv`: `AdverseEvent.objects.all()` — BUG Cat-H; excludes: `event_description`, `attachment`, `reported_by`, `created_by`
+    - `export_audit_csv`: `AuditLog.objects.all()`; excludes: `changed_fields`, `user_agent`
+    - All views decorated with `@login_required`
+    - _Requirements: 9.1–9.10_
+  - [x] 10.2 Create `reports/templates/reports/listing.html`
+    - Top bar: search input, status/trial/gender dropdowns, Export CSV button (links to `/reports/export/patients/`)
+    - DataTables table: MRN, Patient Name, DOB, Gender, Trial, Enrollment Date, Status badge, Actions (View/Edit/Delete with reason modal)
+    - _Requirements: 9.1, 9.2, 13.1, 13.2_
+  - [x] 10.3 Create `reports/urls.py` and wire into `ctms/urls.py`
+    - _Requirements: 9.1_
+  - [ ]* 10.4 Write property test for export filter gap
+    - **Property 7: Export filter gap** — any GET params passed to `export_patients_csv` return all Patient records
+    - **Validates: Requirements 9.3, 9.4**
+  - [ ]* 10.5 Write property test for export audit gap
+    - **Property 8: Export audit gap** — any CSV export call does NOT increase AuditLog count for action=EXPORT
+    - **Validates: Requirements 8.4, 9.3**
+
+- [x] 11. Global UI shell
+  - [x] 11.1 Create `templates/base.html` — AdminLTE 3 shell
+    - Head: AdminLTE 3 CSS, Bootstrap 5, Font Awesome 6, Flatpickr CSS, Select2 CSS, DataTables CSS, Toastr CSS, `ctms.css`
+    - Body: `{% include "navbar.html" %}`, `{% include "sidebar.html" %}`, `{% block content %}`, footer "CTMS v2.1.0 | Confidential — For Internal Use Only | © 2025 ClinTrials Corp"
+    - Scripts: AdminLTE JS, Bootstrap 5 JS, jQuery, Flatpickr JS, Select2 JS, SweetAlert2 JS, DataTables JS, Toastr JS, `ctms.js`
+    - _Requirements: 13.1, 13.2, 13.8_
+  - [x] 11.2 Create `templates/sidebar.html` with navigation links
+    - Links: Dashboard, Register New Patient, All Patients, Add Visit, All Visits, Add Lab Result, All Lab Results, Report Event, All Events, Reports & Export, Audit Trail, Logout
+    - _Requirements: 13.6_
+  - [x] 11.3 Create `templates/navbar.html` with username/role display and logout link
+    - _Requirements: 13.6_
+  - [x] 11.4 Create `templates/dashboard.html`
+    - 4 stat cards: Total Patients, Active Trials (hardcoded 4), Open AEs, Visits This Month
+    - Recent Patients table (last 5): MRN, Name, Trial, Status
+    - Recent Adverse Events table (last 5): Patient, Event, Severity badge
+    - Quick Action buttons: Register Patient, Log Visit, Report AE, View Audit Trail
+    - Dashboard view in `ctms/views.py` (or a `dashboard` app) with `@login_required`
+    - _Requirements: 10.1–10.5_
+  - [x] 11.5 Create `static/css/ctms.css` with status/severity badge styles and layout overrides
+    - `.badge-active`, `.badge-inactive`, `.badge-withdrawn`, `.badge-critical`, `.badge-abnormal`, `.badge-normal`
+    - _Requirements: 13.1_
+  - [x] 11.6 Create `static/js/ctms.js` with reason modals and conditional field logic
+    - `showEditReasonModal(formId)` and `showDeleteReasonModal(formId)` using SweetAlert2 — BUG Cat-H: backend does NOT validate reason is non-empty
+    - Flatpickr initialization on all `.flatpickr-input` elements
+    - Select2 initialization on `.select2` elements
+    - JS show/hide for `deviation_notes` when `protocol_deviation` checkbox toggled
+    - JS show/hide for `sae_report_number` when `is_sae` checkbox toggled
+    - _Requirements: 13.3, 13.4, 13.5_
+
+- [x] 12. Seed management commands
+  - [x] 12.1 Create `patients/management/commands/seed_users.py`
+    - Create `admin@ctms.com` (Admin role, superuser, password Admin@123)
+    - Create `coordinator1@ctms.com` (Coordinator role, password Coord@123)
+    - Create `coordinator2@ctms.com` (Coordinator role, password Coord@123)
+    - Use `get_or_create` to be idempotent
+    - _Requirements: 11.1_
+  - [x] 12.2 Create `patients/management/commands/seed_data.py`
+    - 10 Patient records including: Patient 3 `weight_kg="obese"` (Cat-D), Patient 5 `date_of_birth="01/00/1990"` (Cat-C), Patient 7 `consent_signed=False` (Cat-A), Patient 9 `email="xyz@@domain"` (Cat-E)
+    - 30 VisitLog records (3 per patient) including: some with `protocol_deviation=True` and `deviation_notes=""` (Cat-A/F), some with `systolic_bp="normal"` (Cat-D)
+    - 20 LabResult records (2 per patient) including: some with `abnormal_flag="critical"` and `remarks=""` (Cat-F), some with `result_value="positive"` (Cat-D)
+    - 5 AdverseEvent records including: 2 with `is_sae=True` and `sae_report_number=""` (Cat-A/F), 1 with `resolution_date` before `onset_date` (Cat-F), 1 with `event_description=""` (Cat-A)
+    - Use `get_or_create` or clear-and-recreate to be idempotent
+    - _Requirements: 11.2–11.6_
+
+- [ ] 13. Checkpoint — Ensure all tests pass, ask the user if questions arise.
+
+- [x] 14. Deployment files
+  - Create `Procfile`: `web: gunicorn ctms.wsgi --log-file -`
+  - Create `Dockerfile` based on `python:3.11-slim`: install requirements, run `migrate`, `seed_users`, `seed_data` at build time, `CMD gunicorn ctms.wsgi:application --bind 0.0.0.0:8000`
+  - Create `.env.example` with `SECRET_KEY`, `DEBUG`, `ALLOWED_HOSTS`, `DATABASE_URL`
+  - Create `README.md` with local dev, Railway/Render, and Docker setup instructions; login credentials table
+  - _Requirements: 12.1–12.6_
+
+## Notes
+
+- Tasks marked with `*` are optional and can be skipped for faster MVP
+- All 39 intentional bugs (Cat-A through Cat-H) MUST be preserved exactly — zero accidental hardening
+- Property tests use `pytest` + `hypothesis` and validate that bugs are working as designed
+- Each task references specific requirements for traceability
+- Checkpoints ensure incremental validation between major modules

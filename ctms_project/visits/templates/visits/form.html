@@ -1,0 +1,274 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<section class="content-header">
+  <div class="container-fluid">
+    <div class="row mb-2">
+      <div class="col-sm-6">
+        <h1>{{ title }}</h1>
+      </div>
+      <div class="col-sm-6">
+        <ol class="breadcrumb float-sm-right">
+          <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'visits:list' %}">Visits</a></li>
+          <li class="breadcrumb-item active">{{ title }}</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="content">
+  <div class="container-fluid">
+    <form method="post" id="visitForm">
+      {% csrf_token %}
+      <input type="hidden" name="edit_reason" id="edit_reason" value="">
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+          {% for error in form.non_field_errors %}
+            <p class="mb-0">{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <!-- Visit Information -->
+      <div class="card card-primary card-outline">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-calendar-check mr-2"></i>Visit Information</h3>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-4">
+              <div class="form-group">
+                <label>Patient <span class="text-danger">*</span></label>
+                {{ form.patient }}
+                {% if form.patient.errors %}
+                  <div class="text-danger small">{{ form.patient.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-group">
+                <label>Visit Number <span class="text-danger">*</span></label>
+                {{ form.visit_number }}
+                {% if form.visit_number.errors %}
+                  <div class="text-danger small">{{ form.visit_number.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-group">
+                <label>Visit Type <span class="text-danger">*</span></label>
+                {{ form.visit_type }}
+                {% if form.visit_type.errors %}
+                  <div class="text-danger small">{{ form.visit_type.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-4">
+              <div class="form-group">
+                <label>Visit Date <span class="text-danger">*</span></label>
+                {{ form.visit_date }}
+                {% if form.visit_date.errors %}
+                  <div class="text-danger small">{{ form.visit_date.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-group">
+                <label>Next Visit Date</label>
+                {{ form.next_visit_date }}
+                {% if form.next_visit_date.errors %}
+                  <div class="text-danger small">{{ form.next_visit_date.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-group">
+                <label>Investigator Name <span class="text-danger">*</span></label>
+                {{ form.investigator_name }}
+                {% if form.investigator_name.errors %}
+                  <div class="text-danger small">{{ form.investigator_name.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group">
+                <label>Coordinator</label>
+                {{ form.coordinator }}
+                {% if form.coordinator.errors %}
+                  <div class="text-danger small">{{ form.coordinator.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vitals — BUG Cat-D: all plain text inputs -->
+      <div class="card card-success card-outline">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-heartbeat mr-2"></i>Vitals</h3>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-4">
+              <div class="form-group">
+                <label>Systolic BP (mmHg) <span class="text-danger">*</span></label>
+                {{ form.systolic_bp }}
+                {% if form.systolic_bp.errors %}
+                  <div class="text-danger small">{{ form.systolic_bp.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-group">
+                <label>Diastolic BP (mmHg) <span class="text-danger">*</span></label>
+                {{ form.diastolic_bp }}
+                {% if form.diastolic_bp.errors %}
+                  <div class="text-danger small">{{ form.diastolic_bp.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-group">
+                <label>Heart Rate (bpm) <span class="text-danger">*</span></label>
+                {{ form.heart_rate }}
+                {% if form.heart_rate.errors %}
+                  <div class="text-danger small">{{ form.heart_rate.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-4">
+              <div class="form-group">
+                <label>Body Temperature (°C) <span class="text-danger">*</span></label>
+                {{ form.body_temperature }}
+                {% if form.body_temperature.errors %}
+                  <div class="text-danger small">{{ form.body_temperature.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-group">
+                <label>Oxygen Saturation (%) <span class="text-danger">*</span></label>
+                {{ form.oxygen_saturation }}
+                {% if form.oxygen_saturation.errors %}
+                  <div class="text-danger small">{{ form.oxygen_saturation.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Visit Details -->
+      <div class="card card-info card-outline">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-notes-medical mr-2"></i>Visit Details</h3>
+        </div>
+        <div class="card-body">
+          <div class="form-group">
+            <label>Visit Notes</label>
+            {{ form.visit_notes }}
+            {% if form.visit_notes.errors %}
+              <div class="text-danger small">{{ form.visit_notes.errors|join:", " }}</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Protocol Deviation — BUG Cat-A/F: deviation_notes not required server-side -->
+      <div class="card card-warning card-outline">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-exclamation-circle mr-2"></i>Protocol Deviation</h3>
+        </div>
+        <div class="card-body">
+          <div class="form-group">
+            <label>Protocol Deviation? <span class="text-danger">*</span></label>
+            <div>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="protocol_deviation"
+                       id="deviation_yes" value="True"
+                       {% if form.instance.protocol_deviation %}checked{% endif %}>
+                <label class="form-check-label" for="deviation_yes">Yes</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="protocol_deviation"
+                       id="deviation_no" value="False"
+                       {% if not form.instance.protocol_deviation %}checked{% endif %}>
+                <label class="form-check-label" for="deviation_no">No</label>
+              </div>
+            </div>
+            {% if form.protocol_deviation.errors %}
+              <div class="text-danger small">{{ form.protocol_deviation.errors|join:", " }}</div>
+            {% endif %}
+          </div>
+          <div id="deviation_notes_section" style="display:none;">
+            <div class="form-group">
+              <label>Deviation Notes</label>
+              {{ form.deviation_notes }}
+              {% if form.deviation_notes.errors %}
+                <div class="text-danger small">{{ form.deviation_notes.errors|join:", " }}</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row mb-4">
+        <div class="col-12">
+          {% if visit %}
+            <button type="button" class="btn btn-primary" onclick="showEditReasonModal('visitForm')">
+              <i class="fas fa-save mr-1"></i> Save Changes
+            </button>
+          {% else %}
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-save mr-1"></i> Log Visit
+            </button>
+          {% endif %}
+          <a href="{% url 'visits:list' %}" class="btn btn-secondary ml-2">
+            <i class="fas fa-times mr-1"></i> Cancel
+          </a>
+        </div>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    // Flatpickr on date fields
+    flatpickr('.flatpickr-input', {
+      dateFormat: 'd/m/Y',
+      allowInput: true,
+    });
+
+    // Show/hide deviation_notes based on protocol_deviation radio
+    function toggleDeviationNotes() {
+      var yes = document.getElementById('deviation_yes');
+      var section = document.getElementById('deviation_notes_section');
+      if (yes && yes.checked) {
+        section.style.display = 'block';
+      } else {
+        section.style.display = 'none';
+      }
+    }
+
+    var radios = document.querySelectorAll('input[name="protocol_deviation"]');
+    radios.forEach(function(r) {
+      r.addEventListener('change', toggleDeviationNotes);
+    });
+    toggleDeviationNotes();
+  });
+</script>
+{% endblock %}

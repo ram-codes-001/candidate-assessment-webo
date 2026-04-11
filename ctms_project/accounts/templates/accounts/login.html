@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CTMS | Sign In</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/admin-lte/3.2.0/css/adminlte.min.css">
+  <style>
+    .login-page { background: #343a40; }
+    .login-box-msg { font-size: 0.95rem; color: #6c757d; }
+    .card-header { background: #007bff; color: #fff; text-align: center; padding: 1.5rem; }
+    .card-header h1 { font-size: 1.6rem; margin: 0; }
+    .card-header small { font-size: 0.8rem; opacity: 0.85; }
+  </style>
+</head>
+<body class="hold-transition login-page">
+<div class="login-box">
+  <div class="card card-outline card-primary">
+    <div class="card-header">
+      <h1><i class="fas fa-flask me-2"></i>CTMS</h1>
+      <small>Clinical Trial Management System</small>
+    </div>
+    <div class="card-body">
+      <p class="login-box-msg">Sign in to start your session</p>
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+          {% for error in form.non_field_errors %}
+            <span>{{ error }}</span>
+          {% endfor %}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endif %}
+
+      <form action="{% url 'accounts:login' %}" method="post">
+        {% csrf_token %}
+
+        <div class="input-group mb-3">
+          <input type="text"
+                 name="username"
+                 class="form-control {% if form.username.errors %}is-invalid{% endif %}"
+                 placeholder="Username"
+                 value="{{ form.username.value|default:'' }}"
+                 autofocus>
+          <div class="input-group-append">
+            <div class="input-group-text"><span class="fas fa-user"></span></div>
+          </div>
+          {% if form.username.errors %}
+            <div class="invalid-feedback">{{ form.username.errors|join:", " }}</div>
+          {% endif %}
+        </div>
+
+        <div class="input-group mb-3">
+          <input type="password"
+                 name="password"
+                 class="form-control {% if form.password.errors %}is-invalid{% endif %}"
+                 placeholder="Password">
+          <div class="input-group-append">
+            <div class="input-group-text"><span class="fas fa-lock"></span></div>
+          </div>
+          {% if form.password.errors %}
+            <div class="invalid-feedback">{{ form.password.errors|join:", " }}</div>
+          {% endif %}
+        </div>
+
+        <div class="row">
+          <div class="col-8">
+            <!-- BUG Cat-H: Remember Me checkbox renders but has no effect on session -->
+            <div class="icheck-primary">
+              <input type="checkbox" id="remember_me" name="remember_me">
+              <label for="remember_me">Remember Me</label>
+            </div>
+          </div>
+          <div class="col-4">
+            <button type="submit" class="btn btn-primary btn-block w-100">Sign In</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<footer class="text-center text-muted mt-3" style="position:fixed;bottom:1rem;width:100%;">
+  <small>CTMS v2.1.0</small>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/admin-lte/3.2.0/js/adminlte.min.js"></script>
+</body>
+</html>

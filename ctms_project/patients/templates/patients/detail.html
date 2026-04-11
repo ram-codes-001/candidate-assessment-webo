@@ -1,0 +1,341 @@
+{% extends "base.html" %}
+{% block title %}Patient: {{ patient.first_name }} {{ patient.last_name }}{% endblock %}
+
+{% block content %}
+<section class="content-header">
+  <div class="container-fluid">
+    <div class="row mb-2">
+      <div class="col-sm-6">
+        <h1>Patient Record</h1>
+      </div>
+      <div class="col-sm-6">
+        <ol class="breadcrumb float-sm-right">
+          <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'reports:listing' %}">Patients</a></li>
+          <li class="breadcrumb-item active">{{ patient.medical_record_number }}</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="content">
+  <div class="container-fluid">
+
+    <!-- Action Buttons -->
+    <div class="row mb-3">
+      <div class="col-12">
+        <a href="{% url 'patients:edit' pk=patient.pk %}" class="btn btn-warning">
+          <i class="fas fa-edit mr-1"></i> Edit Patient
+        </a>
+        <button type="button" class="btn btn-danger ml-2"
+                onclick="showDeleteReasonModal('deleteForm')">
+          <i class="fas fa-trash mr-1"></i> Delete Patient
+        </button>
+        <a href="{% url 'reports:listing' %}" class="btn btn-secondary ml-2">
+          <i class="fas fa-arrow-left mr-1"></i> Back to List
+        </a>
+      </div>
+    </div>
+
+    <!-- Hidden delete form -->
+    <form id="deleteForm" method="post" action="{% url 'patients:delete' pk=patient.pk %}">
+      {% csrf_token %}
+      <input type="hidden" name="delete_reason" id="delete_reason" value="">
+    </form>
+
+    <!-- Patient Info Cards -->
+    <div class="row">
+      <div class="col-md-6">
+        <div class="card card-primary card-outline">
+          <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-user mr-2"></i>Personal Information</h3>
+          </div>
+          <div class="card-body">
+            <table class="table table-sm table-borderless">
+              <tr><th width="40%">Full Name</th><td>{{ patient.first_name }} {{ patient.last_name }}</td></tr>
+              <tr><th>Date of Birth</th><td>{{ patient.date_of_birth }}</td></tr>
+              <tr><th>Gender</th><td>{{ patient.get_gender_display }}</td></tr>
+              <tr><th>MRN</th><td><code>{{ patient.medical_record_number }}</code></td></tr>
+              <tr><th>National ID</th><td>{{ patient.national_id }}</td></tr>
+              <tr><th>Blood Group</th><td>{{ patient.blood_group }}</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card card-info card-outline">
+          <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-address-book mr-2"></i>Contact Information</h3>
+          </div>
+          <div class="card-body">
+            <table class="table table-sm table-borderless">
+              <tr><th width="40%">Email</th><td>{{ patient.email }}</td></tr>
+              <tr><th>Phone</th><td>{{ patient.phone }}</td></tr>
+              <tr><th>Address</th><td>{{ patient.address|default:"—" }}</td></tr>
+              <tr><th>Emergency Contact</th><td>{{ patient.emergency_contact_name }}</td></tr>
+              <tr><th>Emergency Phone</th><td>{{ patient.emergency_contact_phone }}</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-md-6">
+        <div class="card card-success card-outline">
+          <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-heartbeat mr-2"></i>Medical Information</h3>
+          </div>
+          <div class="card-body">
+            <table class="table table-sm table-borderless">
+              <tr><th width="40%">Weight (kg)</th><td>{{ patient.weight_kg }}</td></tr>
+              <tr><th>Height (cm)</th><td>{{ patient.height_cm }}</td></tr>
+              <tr><th>Diagnosis</th><td>{{ patient.diagnosis|default:"—" }}</td></tr>
+              <tr><th>Consent Signed</th>
+                <td>
+                  {% if patient.consent_signed %}
+                    <span class="badge badge-success">Yes</span>
+                  {% else %}
+                    <span class="badge badge-danger">No</span>
+                  {% endif %}
+                </td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card card-secondary card-outline">
+          <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-flask mr-2"></i>Trial Information</h3>
+          </div>
+          <div class="card-body">
+            <table class="table table-sm table-borderless">
+              <tr><th width="40%">Trial</th><td>{{ patient.get_trial_assignment_display }}</td></tr>
+              <tr><th>Enrollment Date</th><td>{{ patient.enrollment_date }}</td></tr>
+              <tr><th>Status</th>
+                <td>
+                  <span class="badge badge-{{ patient.status }}">{{ patient.get_status_display }}</span>
+                </td>
+              </tr>
+              <tr><th>Created By</th><td>{{ patient.created_by|default:"—" }}</td></tr>
+              <tr><th>Created At</th><td>{{ patient.created_at|date:"d/m/Y H:i" }}</td></tr>
+              <tr><th>Updated At</th><td>{{ patient.updated_at|date:"d/m/Y H:i" }}</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabbed Sub-sections -->
+    <div class="card">
+      <div class="card-header p-0 border-bottom-0">
+        <ul class="nav nav-tabs" id="patientTabs" role="tablist">
+          <li class="nav-item">
+            <a class="nav-link active" id="visits-tab" data-toggle="tab" href="#visits" role="tab">
+              <i class="fas fa-calendar-check mr-1"></i>Visits
+              <span class="badge badge-secondary ml-1">{{ visits.count }}</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" id="labs-tab" data-toggle="tab" href="#labs" role="tab">
+              <i class="fas fa-vial mr-1"></i>Lab Results
+              <span class="badge badge-secondary ml-1">{{ labs.count }}</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" id="aes-tab" data-toggle="tab" href="#aes" role="tab">
+              <i class="fas fa-exclamation-triangle mr-1"></i>Adverse Events
+              <span class="badge badge-secondary ml-1">{{ aes.count }}</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" id="audit-tab" data-toggle="tab" href="#audit" role="tab">
+              <i class="fas fa-history mr-1"></i>Audit Trail
+              <span class="badge badge-secondary ml-1">{{ audit_logs.count }}</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+      <div class="card-body">
+        <div class="tab-content" id="patientTabsContent">
+
+          <!-- Visits Tab -->
+          <div class="tab-pane fade show active" id="visits" role="tabpanel">
+            <div class="d-flex justify-content-between mb-2">
+              <h5>Visit Logs</h5>
+              <a href="{% url 'visits:create' %}?patient={{ patient.pk }}" class="btn btn-sm btn-primary">
+                <i class="fas fa-plus mr-1"></i>Add Visit
+              </a>
+            </div>
+            {% if visits %}
+              <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                  <thead class="thead-light">
+                    <tr>
+                      <th>Visit #</th><th>Date</th><th>Type</th>
+                      <th>Investigator</th><th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for v in visits %}
+                    <tr>
+                      <td>{{ v.visit_number }}</td>
+                      <td>{{ v.visit_date }}</td>
+                      <td>{{ v.get_visit_type_display }}</td>
+                      <td>{{ v.investigator_name }}</td>
+                      <td>
+                        <a href="{% url 'visits:detail' pk=v.pk %}" class="btn btn-xs btn-info">View</a>
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <p class="text-muted">No visits recorded.</p>
+            {% endif %}
+          </div>
+
+          <!-- Lab Results Tab -->
+          <div class="tab-pane fade" id="labs" role="tabpanel">
+            <div class="d-flex justify-content-between mb-2">
+              <h5>Lab Results</h5>
+              <a href="{% url 'labs:create' %}?patient={{ patient.pk }}" class="btn btn-sm btn-primary">
+                <i class="fas fa-plus mr-1"></i>Add Lab Result
+              </a>
+            </div>
+            {% if labs %}
+              <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                  <thead class="thead-light">
+                    <tr>
+                      <th>Test</th><th>Date</th><th>Result</th>
+                      <th>Unit</th><th>Flag</th><th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for l in labs %}
+                    <tr>
+                      <td>{{ l.test_name }}</td>
+                      <td>{{ l.sample_collection_date }}</td>
+                      <td>{{ l.result_value }}</td>
+                      <td>{{ l.unit }}</td>
+                      <td>
+                        <span class="badge badge-{{ l.abnormal_flag }}">{{ l.get_abnormal_flag_display }}</span>
+                      </td>
+                      <td>
+                        <a href="{% url 'labs:detail' pk=l.pk %}" class="btn btn-xs btn-info">View</a>
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <p class="text-muted">No lab results recorded.</p>
+            {% endif %}
+          </div>
+
+          <!-- Adverse Events Tab -->
+          <div class="tab-pane fade" id="aes" role="tabpanel">
+            <div class="d-flex justify-content-between mb-2">
+              <h5>Adverse Events</h5>
+              <a href="{% url 'adverse_events:create' %}?patient={{ patient.pk }}" class="btn btn-sm btn-primary">
+                <i class="fas fa-plus mr-1"></i>Report Event
+              </a>
+            </div>
+            {% if aes %}
+              <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                  <thead class="thead-light">
+                    <tr>
+                      <th>Event</th><th>Onset Date</th><th>Severity</th>
+                      <th>SAE</th><th>Outcome</th><th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for ae in aes %}
+                    <tr>
+                      <td>{{ ae.event_title }}</td>
+                      <td>{{ ae.onset_date }}</td>
+                      <td>
+                        <span class="badge badge-{{ ae.severity }}">{{ ae.get_severity_display }}</span>
+                      </td>
+                      <td>
+                        {% if ae.is_sae %}
+                          <span class="badge badge-danger">SAE</span>
+                        {% else %}
+                          <span class="badge badge-secondary">No</span>
+                        {% endif %}
+                      </td>
+                      <td>{{ ae.get_outcome_display }}</td>
+                      <td>
+                        <a href="{% url 'adverse_events:detail' pk=ae.pk %}" class="btn btn-xs btn-info">View</a>
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <p class="text-muted">No adverse events recorded.</p>
+            {% endif %}
+          </div>
+
+          <!-- Audit Trail Tab -->
+          <div class="tab-pane fade" id="audit" role="tabpanel">
+            <h5>Audit Trail</h5>
+            {% if audit_logs %}
+              <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                  <thead class="thead-light">
+                    <tr>
+                      <th>Timestamp</th><th>User</th><th>Action</th>
+                      <th>Reason</th><th>Changed Fields</th><th>IP</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for log in audit_logs %}
+                    <tr>
+                      <td>{{ log.timestamp|date:"d/m/Y H:i:s" }}</td>
+                      <td>{{ log.user|default:"—" }}</td>
+                      <td>
+                        <span class="badge badge-{% if log.action == 'CREATE' %}success{% elif log.action == 'UPDATE' %}warning{% elif log.action == 'DELETE' %}danger{% else %}secondary{% endif %}">
+                          {{ log.action }}
+                        </span>
+                      </td>
+                      <td>{{ log.reason|default:"—" }}</td>
+                      <td>
+                        {% if log.changed_fields %}
+                          <button class="btn btn-xs btn-outline-secondary"
+                                  data-toggle="collapse"
+                                  data-target="#diff-{{ log.pk }}">
+                            Show diff
+                          </button>
+                          <div id="diff-{{ log.pk }}" class="collapse mt-1">
+                            <pre class="small bg-light p-2">{{ log.changed_fields }}</pre>
+                          </div>
+                        {% else %}
+                          —
+                        {% endif %}
+                      </td>
+                      <td>{{ log.ip_address|default:"—" }}</td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <p class="text-muted">No audit entries found.</p>
+            {% endif %}
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+{% endblock %}
